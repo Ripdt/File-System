@@ -1,8 +1,8 @@
 # Abstrato
 
-Sistema de arquivo FAT16 para disciplina de Sistemas Operacionais.
+Sistema de arquivo FAT32 para disciplina de Sistemas Operacionais.
 
-Atualizado por Larissa de Souza, Paulo Hermans e Vinícius Schütz Piva.
+Atualizado por Larissa de Souza, Paulo Hermans, Vinícius Schütz Piva, Filipi Scalvin da Costa e Eduarda Immianowsky.
 
 # Instruções de Compilação
 
@@ -15,12 +15,12 @@ O sistema deve ter um compilador GCC 11+, com suporte à C11, e GNU Make.
 Para compilar, rode:
 
 ```
-$ make resetimg obese16
+$ make resetimg obese32
 ```
 
 Para executar, rode:
 ```
-$ ./obese16 <COMANDO> [ARGUMENTOS] <DISCO>
+$ ./obese32 <COMANDO> [ARGUMENTOS] <DISCO>
 ```
 
 ### Windows
@@ -71,7 +71,7 @@ $ ./obese16 cat teste.txt disk.img
 
 # Guia Documentação
 
-Veja na pasta `docs/` os arquivos `FAT16.md`, `API.md` e `Guia.md`. O código em
+Veja na pasta `docs/` os arquivos `FAT32.md`, `API.md` e `Guia.md`. O código em
 sí também foi altamente documentado.
 
 O arquivo para implementação das funções é o `source/commands.c`.

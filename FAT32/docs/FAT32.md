@@ -1,20 +1,9 @@
-# FAT16
-
-O sistema de arquivos FAT16 consiste em quatro regiões distintas:
-
-1. Setor de boot
-2. Tabela de Alocação de Arquivos (FAT Table)
-3. Diretório Raiz
-4. Região de Dados (Clusters)
-
-![Diagrama: Volume FAT16, mostrando as quatro regiões](fat16.jpg "Volume FAT16")
-
-## Setor de Boot
+# FAT32
 
 O setor de boot consiste em um único setor de 512 bytes que contém dois elementos,
 o programa de bootstrap, carregado pela BIOS para iniciar o sistema operacional,
 e o *Bios Parameter Block*. O programa de boot não nos interessa. O BPB contém
-as informações do volume FAT16 que iremos operar, então ter acesso à ele é importantíssimo.
+as informações do volume FAT32 que iremos operar, então ter acesso à ele é importantíssimo.
 
 Este é o layout em disco do BPB:
 
@@ -27,29 +16,50 @@ que implementaremos, então ela já vem lida na variavel `bpb`.
 Este é a composição de `struct fat_bpb`:
 
 ```c
-struct fat_bpb {                /* bios Parameter block */
+struct fat_bpb { /* bios Parameter block */
 	uint8_t jmp_instruction[3]; /* code to jump to the bootstrap code */
-	unsigned char oem_id[8];    /* Oem ID: name of the formatting OS */
+	unsigned char oem_id[8]; /* Oem ID: name of the formatting OS */
 
-	uint16_t bytes_p_sect;      /* bytes per sector */
-	uint8_t sector_p_clust;     /* sector per cluster */
-	uint16_t reserved_sect;     /* reserved sectors */
-	uint8_t n_fat;              /* number of FAT copies */
+	uint16_t bytes_p_sect; /* bytes per sector */
+	uint8_t sector_p_clust; /* sector per cluster */
+	uint16_t reserved_sect; /* reserved sectors */
+	uint8_t n_fat; /* number of FAT copies */
 	uint16_t possible_rentries; /* number of possible root entries */
-	uint16_t snumber_sect;      /* small number of sectors */
+	uint16_t snumber_sect; /* small number of sectors */
 
-	uint8_t media_desc;         /* media descriptor */
-	uint16_t sect_per_fat;      /* sector per FAT */
-	uint16_t sect_per_track;    /* sector per track */
-	uint16_t number_of_heads;   /* number of heads */
-	uint32_t hidden_sects;      /* hidden sectors */
-	uint32_t large_n_sects;     /* large number of sectors */
+	uint8_t media_desc; /* media descriptor */
+	uint16_t sect_per_fat; /* sector per FAT */
+	uint16_t sect_per_track; /* sector per track */
+	uint16_t number_of_heads; /* number of heads */
+	uint32_t hidden_sects; /* hidden sectors */
+	uint32_t large_n_sects; /* large number of sectors */
+
+	/* FAT32-specific fields */
+	uint32_t sect_per_fat_32;       /* Sectors per FAT (32-bit) */
+	uint16_t flags;                 /* Flags (e.g., active FAT and mirroring info) */
+	uint16_t version;               /* FAT32 version (typically 0x0000) */
+	uint32_t root_cluster;          /* Cluster number of the root directory (typically 2) */
+	uint16_t fs_info;               /* Sector number of the FSInfo structure (typically 1) */
+	uint16_t backup_boot_sector;    /* Sector number of the backup boot sector (typically 6) */
+	uint8_t reserved[12];           /* Reserved for future use (set to 0) */
+
+	/* Boot sector signature */
+	uint8_t drive_number;           /* Drive number (e.g., 0x80 for hard disk) */
+	uint8_t reserved1;              /* Reserved (set to 0) */
+	uint8_t boot_signature;         /* Extended boot signature (0x29 indicates presence of next fields) */
+	uint32_t volume_id;             /* Volume ID (serial number) */
+	char volume_label[11];          /* Volume label (padded with spaces) */
+	char fs_type[8];                /* File system type ("FAT32   ") */
+
+	/* Bootstrap code and signature */
+	uint8_t bootstrap[420];         /* Bootstrap code */
+	uint16_t signature;             /* Boot sector signature (always 0x55AA) */
 };
 ```
 
 Os campos importantes são `bytes_p_sect` que dá a quantidade de bytes em um setor/cluster, usado
-quando formos lêr/copiar arquivos; `sector_p_clust`, pelo mesmo motivo; `possible_rentries`, que
-dá a quantidade de entradas alocadas na estrutura do diretório raíz, usado para acessar o mesmo.
+quando formos lêr/copiar arquivos; `sector_p_clust`, pelo mesmo motivo; `root_cluster`, que indica
+a posição do cluster raiz e é usado para calcular o diretório raiz.
 
 ## Tabela FAT
 
@@ -61,22 +71,7 @@ As duas primeiras entradas da FAT são especiais e não devem ser usadas para gu
 de cluster de arquivo. Como a FAT "verdadeira" só começa da entrada dois em diante, todos os
 ponteiros, quando dereferenciados, devem ser subtraidos do valor dois.
 
-![Diagrama: FAT Table](fat32table.jpg "Esta tabela é para o FAT32, mas passa o ponto.")
-
-A formula para descobrir o endereço final de um cluster em disco é:
-
-```
-real_cluster_address = data_start + (cluster_number - 2) * bpb->bytes_p_sect * bpb->sector_p_clust
-```
-
-O endereço de `data_start` pode ser obtido com a função provida pelo professor `bpb_fdata_address()`.
-
-O `real_cluster_address` pode ser então usado para ler os dados do arquivo diretamente do disco, por exemplo,
-via a função `read_data(fp, real_cluster_address, ...)`.
-
-Entradas NULLas na FAT são clusters livres.
-
-Caso o arquivo não caiba em um só cluster, deve-se seguir os ponteiros da FAT a-là lista encadeada.
+![Diagrama: FAT Table](fat32table.jpg "Tabela FAT32")
 
 ## Diretório Raiz
 

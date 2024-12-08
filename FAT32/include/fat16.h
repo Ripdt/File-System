@@ -54,26 +54,26 @@ struct fat_bpb { /* bios Parameter block */
 	uint32_t hidden_sects; /* hidden sectors */
 	uint32_t large_n_sects; /* large number of sectors */
 
-    /* FAT32-specific fields */
-    uint32_t sect_per_fat_32;       /* Sectors per FAT (32-bit) */
-    uint16_t flags;                 /* Flags (e.g., active FAT and mirroring info) */
-    uint16_t version;               /* FAT32 version (typically 0x0000) */
-    uint32_t root_cluster;          /* Cluster number of the root directory (typically 2) */
-    uint16_t fs_info;               /* Sector number of the FSInfo structure (typically 1) */
-    uint16_t backup_boot_sector;    /* Sector number of the backup boot sector (typically 6) */
-    uint8_t reserved[12];           /* Reserved for future use (set to 0) */
+	/* FAT32-specific fields */
+	uint32_t sect_per_fat_32;       /* Sectors per FAT (32-bit) */
+	uint16_t flags;                 /* Flags (e.g., active FAT and mirroring info) */
+	uint16_t version;               /* FAT32 version (typically 0x0000) */
+	uint32_t root_cluster;          /* Cluster number of the root directory (typically 2) */
+	uint16_t fs_info;               /* Sector number of the FSInfo structure (typically 1) */
+	uint16_t backup_boot_sector;    /* Sector number of the backup boot sector (typically 6) */
+	uint8_t reserved[12];           /* Reserved for future use (set to 0) */
 
-    /* Boot sector signature */
-    uint8_t drive_number;           /* Drive number (e.g., 0x80 for hard disk) */
-    uint8_t reserved1;              /* Reserved (set to 0) */
-    uint8_t boot_signature;         /* Extended boot signature (0x29 indicates presence of next fields) */
-    uint32_t volume_id;             /* Volume ID (serial number) */
-    char volume_label[11];          /* Volume label (padded with spaces) */
-    char fs_type[8];                /* File system type ("FAT32   ") */
+	/* Boot sector signature */
+	uint8_t drive_number;           /* Drive number (e.g., 0x80 for hard disk) */
+	uint8_t reserved1;              /* Reserved (set to 0) */
+	uint8_t boot_signature;         /* Extended boot signature (0x29 indicates presence of next fields) */
+	uint32_t volume_id;             /* Volume ID (serial number) */
+	char volume_label[11];          /* Volume label (padded with spaces) */
+	char fs_type[8];                /* File system type ("FAT32   ") */
 
-    /* Bootstrap code and signature */
-    uint8_t bootstrap[420];         /* Bootstrap code */
-    uint16_t signature;             /* Boot sector signature (always 0x55AA) */
+	/* Bootstrap code and signature */
+	uint8_t bootstrap[420];         /* Bootstrap code */
+	uint16_t signature;             /* Boot sector signature (always 0x55AA) */
 };
 /*
  * NOTE - Modificação
