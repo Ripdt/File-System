@@ -16,12 +16,12 @@ struct far_dir_searchres
 };
 
 /*
- * Esta struct encapsula o resultado de fat16_find_free_cluster()
+ * Esta struct encapsula o resultado de fat32_find_free_cluster()
  *
  */
-struct fat16_newcluster_info
+struct fat32_newcluster_info // Altera nome para fat32
 {
-	uint16_t cluster;
+	uint32_t cluster; // Alterado para 32 bits
 	uint32_t address;
 };
 
@@ -48,7 +48,7 @@ void cat(FILE* fp, char* filename, struct fat_bpb* bpb);
 struct far_dir_searchres find_in_root(struct fat_dir *dirs, char *filename, struct fat_bpb *bpb);
 
 /* Procura cluster vazio */
-struct fat16_newcluster_info fat16_find_free_cluster(FILE* fp, struct fat_bpb* bpb);
+struct fat32_newcluster_info fat32_find_free_cluster(FILE* fp, struct fat_bpb* bpb);
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 

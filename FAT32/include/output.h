@@ -3,8 +3,14 @@
 
 #include "fat16.h"
 
-void show_files(struct fat_dir *);
+/*
+ * Exibe os arquivos presentes no diretório, agora considerando a estrutura de FAT32
+ */
+void show_files(struct fat_dir *dir_entries, struct fat_bpb *bpb);
 
-void verbose(struct fat_bpb *);
+/*
+ * Exibe as informações detalhadas da estrutura do BPB, com novos campos do FAT32
+ */
+void verbose(struct fat_bpb *bpb);
 
 #endif

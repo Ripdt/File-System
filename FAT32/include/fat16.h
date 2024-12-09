@@ -25,10 +25,9 @@ struct fat_dir {
 	uint16_t creation_time; /* time file was created */
 	uint16_t ctreation_date; /* date file was created */
 	uint16_t last_access_date; /* last access date (last read/written) */
-	uint16_t reserved_fat32; /* reserved for fat32 */
 	uint16_t last_write_time; /* time of last write */
 	uint16_t last_write_date; /* date of last write */
-	uint16_t starting_cluster; /* starting cluster */
+	uint32_t starting_cluster; /* starting cluster */
 	uint32_t file_size; /* 32-bit */
 };
 
@@ -100,7 +99,7 @@ uint32_t bpb_fdata_cluster_count(struct fat_bpb* bpb);
 #define RB_ERROR -1
 #define RB_OK     0
 
-#define FAT16_EOF_LO 0xfff8
-#define FAT16_EOF_HI 0xffff
+#define FAT32_EOF_LO 0x0FFFFFF8
+#define FAT32_EOF_HI 0x0FFFFFFF
 
 #endif
