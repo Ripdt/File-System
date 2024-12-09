@@ -3,9 +3,9 @@
 #include <string.h>
 #include <locale.h>
 
-#include "fat16.h"
-#include "commands.h"
-#include "output.h"
+#include "include/fat16.h"
+#include "include/commands.h"
+#include "include/output.h"
 
 /* Exibe a ajuda de uso */
 void usage(char *executable)
