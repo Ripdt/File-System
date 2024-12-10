@@ -92,6 +92,11 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
 
     printf("Nome convertido para FAT32: '%.*s'\n", 11, fat32_filename);
 
+    // Exibir todas as entradas do diretório para depuração
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        printf("Entrada do diretório %u: nome='%.*s'\n", i, 11, root[i].name);
+    }
+
     // Procurar o arquivo no diretório
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%.*s'\n", i, 11, root[i].name, 11, fat32_filename);
