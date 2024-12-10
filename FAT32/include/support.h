@@ -2,7 +2,7 @@
 #define SUPPORT_H
 
 #include <stdbool.h>
-#include "fat16.h"
+#include "fat32.h"  // Alterado para incluir o header do FAT32
 
 #define FAT32_MAX_LFN_SIZE 255
 
