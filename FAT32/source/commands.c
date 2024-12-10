@@ -17,10 +17,10 @@
 #include <sys/types.h>
 
 void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
-    char fat32_filename[11];
-    memset(fat32_filename, ' ', 11); // Preencher com espaços
-    for (int i = 0; i < 11 && filename[i] != '\0'; i++) {
-        fat32_filename[i] = toupper(filename[i]); // Copiar e converter para maiúsculas
+    char fat32_filename[FAT32_MAX_LFN_SIZE];
+    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
+        fprintf(stderr, "Nome de arquivo inválido.\n");
+        return;
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
@@ -38,7 +38,7 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
     }
 
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->sector_p_clust * bpb->bytes_p_sect;
             size_t data_size = strlen(data);
             if (write_bytes(fp, data_address, data, data_size) != data_size) {
@@ -85,19 +85,11 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
     return res;
 }
 
-#include "commands.h"
-#include "support.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h> // Para utilizar toupper
-
-// Função para criar um novo arquivo
 void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
-    char fat32_filename[11];
-    memset(fat32_filename, ' ', 11); // Preencher com espaços
-    for (int i = 0; i < 11 && filename[i] != '\0'; i++) {
-        fat32_filename[i] = toupper(filename[i]); // Copiar e converter para maiúsculas
+    char fat32_filename[FAT32_MAX_LFN_SIZE];
+    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
+        fprintf(stderr, "Nome de arquivo inválido.\n");
+        return;
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
@@ -116,7 +108,7 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
 
     // Verificar se o arquivo já existe para evitar duplicatas
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             printf("Arquivo %s já existe.\n", filename);
             return;
         }
@@ -135,6 +127,18 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
             }
             root[i].low_starting_cluster = cluster_info.cluster;
             root[i].file_size = 0;
+
+            // Atualizar a tabela FAT com o novo cluster
+            uint32_t fat_offset = cluster_info.cluster * 4;
+            uint32_t fat_entry = 0x0FFFFFFF; // Endereço do fim de arquivo
+            if (fseek(fp, bpb->fat_begin_lba * bpb->bytes_p_sect + fat_offset, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro na FAT");
+                return;
+            }
+            if (fwrite(&fat_entry, sizeof(fat_entry), 1, fp) != 1) {
+                perror("Erro ao atualizar a FAT");
+                return;
+            }
 
             if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro no arquivo");
