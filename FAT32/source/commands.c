@@ -131,7 +131,8 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
             // Atualizar a tabela FAT com o novo cluster
             uint32_t fat_offset = cluster_info.cluster * 4;
             uint32_t fat_entry = 0x0FFFFFFF; // Endereço do fim de arquivo
-            if (fseek(fp, bpb->fat_begin_lba * bpb->bytes_p_sect + fat_offset, SEEK_SET) != 0) {
+            uint32_t fat_address = (bpb->reserved_sect * bpb->bytes_p_sect) + fat_offset;
+            if (fseek(fp, fat_address, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro na FAT");
                 return;
             }
