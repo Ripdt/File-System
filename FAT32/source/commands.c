@@ -14,7 +14,7 @@
 
 #include <sys/types.h>
 
-ssize_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size);
+size_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size);
 
 struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb)
 {

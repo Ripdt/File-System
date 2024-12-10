@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "fat32.h"  // Alterado para incluir a header do FAT32
 
-ssize_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size) 
+size_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size) 
 { 
     fseek(fp, addr, SEEK_SET); return fwrite(buffer, 1, size, fp); 
 }
