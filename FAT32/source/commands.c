@@ -169,10 +169,14 @@ void ls(FILE* fp, struct fat32_bpb* bpb) {
         return;
     }
 
+    printf("Iniciando a leitura das entradas do diretório...\n");
+    printf("Endereço raiz: %u, Máximo de entradas: %u\n", root_addr, max_entries);
+
     for (uint32_t i = 0; i < max_entries; i++) {
         uint32_t offset = root_addr + i * sizeof(struct fat32_dir);
         if (read_bytes(fp, offset, &dirs[i], sizeof(dirs[i])) != sizeof(dirs[i])) {
             perror("Erro ao ler a entrada do diretório");
+            printf("Falha ao ler a entrada %u no offset %u\n", i, offset);
             free(dirs);
             return;
         }
@@ -190,27 +194,6 @@ void ls(FILE* fp, struct fat32_bpb* bpb) {
     }
 
     free(dirs);
-}
-
-struct fat32_newcluster_info fat32_find_free_cluster(FILE *fp, struct fat32_bpb *bpb)
-{
-    uint32_t cluster = 0x0;
-    uint32_t fat_address = bpb_faddress(bpb);
-    uint32_t total_clusters = bpb_fdata_cluster_count(bpb);
-
-    for (cluster = 0x2; cluster < total_clusters; cluster++) {
-        uint32_t entry;
-        uint32_t entry_address = fat_address + cluster * sizeof(uint32_t);
-        read_bytes(fp, entry_address, &entry, sizeof(uint32_t));
-
-        if (entry == 0x0) {
-            struct fat32_newcluster_info res = { .cluster = cluster, .address = entry_address };
-            return res;
-        }
-    }
-
-    struct fat32_newcluster_info res = { .cluster = 0, .address = 0 }; // Não encontrou espaço livre
-    return res;
 }
 
 void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
