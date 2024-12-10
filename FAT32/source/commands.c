@@ -37,8 +37,8 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
 }
 
 void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32STR_SIZE_WNULL];
-    if (cstr_to_fat32_lfn(filename, fat32_filename)) {
+    char fat32_filename[FAT32_MAX_LFN_SIZE];
+    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
         fprintf(stderr, "Nome de arquivo inválido.\n");
         return;
     }
@@ -55,14 +55,20 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     for (int i = 0; i < bpb->root_entry_count; i++) {
         if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
             memset(&root[i], 0, sizeof(struct fat32_dir));
-            memcpy(root[i].name, fat32_filename, FAT32STR_SIZE);
+            memcpy(root[i].name, fat32_filename, FAT32_MAX_LFN_SIZE);
             root[i].attr = 0x20; // Definir atributos do arquivo (arquivo normal)
             root[i].low_starting_cluster = 0; // Inicialmente, sem clusters alocados
             root[i].file_size = 0; // Tamanho inicial é 0
 
             uint32_t new_file_address = root_address + sizeof(struct fat32_dir) * i;
-            (void) fseek(fp, new_file_address, SEEK_SET);
-            (void) fwrite(&root[i], sizeof(struct fat32_dir), 1, fp);
+            if (fseek(fp, new_file_address, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no arquivo");
+                return;
+            }
+            if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
+                perror("Erro ao escrever no arquivo");
+                return;
+            }
 
             printf("Arquivo %s criado com sucesso.\n", filename);
             return;
