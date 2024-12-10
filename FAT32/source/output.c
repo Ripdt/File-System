@@ -118,10 +118,10 @@ void verbose(struct fat32_bpb *bios_pb)
 
     /* Código do bootstrap e assinatura */
     fprintf(stdout, "Bootstrap code: ");
-    for (int i = 0; i < 420; i++)
-        fprintf(stdout, "%i", bios_pb->bootstrap[i]);
-    fprintf(stdout, "\n");
-    fprintf(stdout, "Boot sector signature: %d\n", bios_pb->signature);
+    // Removidos pois não existem na estrutura fat32_bpb
+    // for (int i = 0; i < 420; i++)
+    //     fprintf(stdout, "%i", bios_pb->bootstrap[i]);
+    // fprintf(stdout, "Boot sector signature: %d\n", bios_pb->signature);
     fprintf(stdout, "\n");
     fprintf(stdout, "\n");
 
