@@ -46,8 +46,14 @@ void cp(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb);
  */
 void cat(FILE* fp, char* filename, struct fat32_bpb* bpb);
 
+// Definição da estrutura struct
+fat32_dir_searchres
+{ 
+    int found; struct fat32_dir *dir; 
+};
+
 /* função auxiliar: encontrar um filename específico no fat_dir */
-struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb);
+struct fat32_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb);
 
 /* procurar cluster vazio */
 struct fat32_newcluster_info fat32_find_free_cluster(FILE* fp, struct fat32_bpb* bpb);

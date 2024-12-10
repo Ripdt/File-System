@@ -141,7 +141,6 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
     fprintf(stderr, "Não foi possível encontrar o arquivo %s.\n", filename);
 }
 
-// Corrigir o final do arquivo e a declaração da estrutura find_in_root
 struct fat32_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb) {
     struct fat32_dir_searchres res;
     res.found = 0;
@@ -152,26 +151,6 @@ struct fat32_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, 
             break;
         }
     }
-    return res;
-}
-
-struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb)
-{
-    struct far_dir_searchres res = { .found = false };
-
-    for (size_t i = 0; i < bpb->root_entry_count; i++)
-    {
-        if (dirs[i].name[0] == '\0') continue;
-
-        if (memcmp((char *) dirs[i].name, filename, FAT32STR_SIZE) == 0)
-        {
-            res.found = true;
-            res.fdir  = dirs[i];
-            res.idx   = i;
-            break;
-        }
-    }
-
     return res;
 }
 
