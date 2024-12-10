@@ -158,19 +158,35 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     fprintf(stderr, "Não foi possível criar o arquivo %s. Diretório raiz cheio.\n", filename);
 }
 
-struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
-{
+void ls(FILE* fp, struct fat32_bpb* bpb) {
     uint32_t root_addr = bpb_froot_addr(bpb);
     uint32_t max_entries = bpb->sector_p_clust * bpb->bytes_p_sect / sizeof(struct fat32_dir);
 
-    struct fat32_dir *dirs = malloc(sizeof(struct fat32_dir) * max_entries);
+    struct fat32_dir* dirs = malloc(sizeof(struct fat32_dir) * max_entries);
+
+    if (!dirs) {
+        perror("Erro ao alocar memória");
+        return;
+    }
 
     for (uint32_t i = 0; i < max_entries; i++) {
         uint32_t offset = root_addr + i * sizeof(struct fat32_dir);
-        read_bytes(fp, offset, &dirs[i], sizeof(dirs[i]));
+        if (read_bytes(fp, offset, &dirs[i], sizeof(dirs[i])) != sizeof(dirs[i])) {
+            perror("Erro ao ler a entrada do diretório");
+            free(dirs);
+            return;
+        }
     }
 
-    return dirs;
+    printf("ATTR  NAME            SIZE\n");
+    printf("-------------------------\n");
+    for (uint32_t i = 0; i < max_entries; i++) {
+        if (dirs[i].name[0] != DIR_FREE_ENTRY && dirs[i].name[0] != '\0') {
+            printf("0x%02x  %-11s    %d B\n", dirs[i].attr, dirs[i].name, dirs[i].file_size);
+        }
+    }
+
+    free(dirs);
 }
 
 struct fat32_newcluster_info fat32_find_free_cluster(FILE *fp, struct fat32_bpb *bpb)
