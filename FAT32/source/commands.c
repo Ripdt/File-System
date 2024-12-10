@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <string.h>
+#include <strings.h> // Incluindo para usar strncasecmp
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <stdbool.h>
