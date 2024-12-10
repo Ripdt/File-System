@@ -255,8 +255,10 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         return;
     }
 
+    int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            found = 1;
             uint32_t cluster = root[i].low_starting_cluster;
 
             // Limpar a entrada do diretório
@@ -284,13 +286,14 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
                 perror("Erro ao limpar a FAT");
                 return;
             }
-
-            printf("Arquivo %s removido com sucesso.\n", filename);
-            return;
         }
     }
 
-    fprintf(stderr, "Arquivo %s não encontrado.\n", filename);
+    if (found) {
+        printf("Arquivo %s removido com sucesso.\n", filename);
+    } else {
+        fprintf(stderr, "Arquivo %s não encontrado.\n", filename);
+    }
 }
 
 void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
