@@ -21,11 +21,16 @@
 #include "fat32.h"
 #include <stdio.h>
 
+#include "commands.h"
+#include "support.h"
+#include "fat32.h"
+#include <stdio.h>
+
 struct fat32_newcluster_info fat32_find_free_cluster(FILE* fp, struct fat32_bpb* bpb) {
     struct fat32_newcluster_info info = {0, 0};
 
     uint32_t fat_start = bpb->reserved_sect * bpb->bytes_p_sect;
-    uint32_t fat_size = bpb->fat_sz_32 * bpb->bytes_p_sect;
+    uint32_t fat_size = bpb->sector_p_clust * bpb->bytes_p_sect; // Ajuste para usar membros corretos
 
     // Percorrer a tabela FAT para encontrar um cluster livre
     for (uint32_t offset = 0; offset < fat_size; offset += 4) {
