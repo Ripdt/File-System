@@ -176,6 +176,9 @@ void ls(FILE* fp, struct fat32_bpb* bpb) {
             free(dirs);
             return;
         }
+        // Adicionar mensagem de depuração para verificar cada entrada lida
+        printf("Leitura da entrada %u: nome='%s', attr=0x%02x, tamanho=%u bytes\n",
+               i, dirs[i].name, dirs[i].attr, dirs[i].file_size);
     }
 
     printf("ATTR  NAME            SIZE\n");
