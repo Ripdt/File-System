@@ -266,10 +266,10 @@ void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
 }
 
 void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32_MAX_LFN_SIZE];
-    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        return;
+    char fat32_filename[11];
+    memset(fat32_filename, ' ', 11); // Preencher com espaços
+    for (int i = 0; i < 11 && filename[i] != '\0'; i++) {
+        fat32_filename[i] = toupper(filename[i]);
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
@@ -289,8 +289,8 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     printf("Iniciando a remoção do arquivo %s...\n", filename);
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        printf("Verificando entrada do diretório %u: nome='%s', comparando com '%s'\n", i, root[i].name, fat32_filename);
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+        printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%s'\n", i, 11, root[i].name, fat32_filename);
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             found = 1;
             uint32_t cluster = root[i].low_starting_cluster;
 
@@ -319,7 +319,7 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
                 return;
             }
             if (check_dir.name[0] != DIR_FREE_ENTRY) {
-                fprintf(stderr, "A entrada do diretório não foi limpa corretamente. Verificado nome: %s\n", check_dir.name);
+                fprintf(stderr, "A entrada do diretório não foi limpa corretamente. Verificado nome: %.*s\n", 11, check_dir.name);
                 return;
             }
 
