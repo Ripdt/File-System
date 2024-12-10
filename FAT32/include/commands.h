@@ -46,13 +46,12 @@ void cp(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb);
  */
 void cat(FILE* fp, char* filename, struct fat32_bpb* bpb);
 
-// Definição da estrutura struct
-fat32_dir_searchres
-{ 
-    int found; struct fat32_dir *dir; 
+// Definição da estrutura corretamente
+struct fat32_dir_searchres {
+    int found; struct fat32_dir *dir;
 };
 
-/* função auxiliar: encontrar um filename específico no fat_dir */
+// Declaração da função corretamente
 struct fat32_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb);
 
 /* procurar cluster vazio */
