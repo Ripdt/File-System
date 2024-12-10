@@ -61,10 +61,11 @@ int read_bytes(FILE *fp, unsigned int offset, void *buff, unsigned int len)
     return RB_OK;
 }
 
-void rfat(FILE *fp, struct fat32_bpb *bpb) {
-    if (read_bytes(fp, 0x0, bpb, sizeof(struct fat32_bpb)) == RB_ERROR) {
-        fprintf(stderr, "Erro ao ler o BPB do FAT32\n");
-        exit(EXIT_FAILURE);
-    }
-}
+void rfat(FILE* fp, struct fat32_bpb* bpb) {
+    // Leia o BPB e configure a estrutura bpb
+    fseek(fp, 0, SEEK_SET);
+    fread(bpb, sizeof(struct fat32_bpb), 1, fp);
 
+    // Configurar o valor de root_entry_count
+    bpb->root_entry_count = 512; // Valor típico, ajuste conforme necessário
+}
