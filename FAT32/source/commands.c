@@ -265,6 +265,13 @@ void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
     printf("mv %s → %s.\n", source, dest);
 }
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "fat32.h"
+#include "commands.h"
+#include "support.h"
+
 void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     char fat32_filename[FAT32_MAX_LFN_SIZE];
     if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
@@ -286,6 +293,7 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         return;
     }
 
+    printf("Iniciando a remoção do arquivo %s...\n", filename);
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
@@ -293,6 +301,7 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
             uint32_t cluster = root[i].low_starting_cluster;
 
             // Limpar a entrada do diretório
+            printf("Removendo entrada do diretório no índice %u...\n", i);
             memset(&root[i], 0, sizeof(struct fat32_dir));
             root[i].name[0] = DIR_FREE_ENTRY;
 
@@ -306,6 +315,7 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
             }
 
             // Limpar a FAT
+            printf("Limpando a FAT para o cluster %u...\n", cluster);
             uint32_t fat_offset = cluster * 4;
             uint32_t fat_address = (bpb->reserved_sect * bpb->bytes_p_sect) + fat_offset;
             uint32_t fat_entry = 0x00000000; // Cluster livre
