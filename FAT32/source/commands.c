@@ -36,15 +36,14 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
     return res;
 }
 
-void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
-{ 
+void create(FILE* fp __attribute__((unused)), char* filename, struct fat32_bpb* bpb __attribute__((unused)))
+{
     FILE *file = fopen(filename, "w");
-    if (file == NULL)
-    { 
-        perror("Could not open file"); exit(EXIT_FAILURE);
+    if (file == NULL) {
+        perror("Could not open file");
+        exit(EXIT_FAILURE);
     }
     fclose(file);
-    
     printf("File %s created successfully.\n", filename);
 }
 
