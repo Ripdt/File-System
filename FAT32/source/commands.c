@@ -36,14 +36,6 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         return;
     }
 
-    // Imprimir apenas entradas de arquivos não vazias no diretório raiz
-    printf("Arquivos no diretório raiz:\n");
-    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (root[i].name[0] != DIR_FREE_ENTRY && root[i].name[0] != '\0') {
-            printf("%.11s\n", root[i].name);
-        }
-    }
-
     // Comparação insensível a maiúsculas e minúsculas e lidando com a extensão
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
@@ -55,7 +47,6 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
             }
             root[i].file_size = data_size;
 
-            // Atualizar entrada do diretório com novo tamanho de arquivo
             uint32_t entry_address = root_address + sizeof(struct fat32_dir) * i;
             if (fseek(fp, entry_address, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro no arquivo");
@@ -359,16 +350,47 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
     return;
 }
 
-void cat(FILE* fp, char* filename __attribute__((unused)), struct fat32_bpb* bpb __attribute__((unused)))
-{
-    char buffer[512];
-    size_t n;
-
-    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-        fwrite(buffer, 1, n, stdout);
+void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) {
+    char fat32_filename[FAT32_MAX_LFN_SIZE];
+    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
+        fprintf(stderr, "Nome de arquivo inválido.\n");
+        return;
     }
 
-    if (ferror(fp)) {
-        perror("cat: erro ao ler arquivo");
+    uint32_t root_address = bpb_froot_addr(bpb);
+    uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
+    struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
+
+    if (fseek(fp, root_address, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return;
     }
+
+    if (fread(root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
+        perror("Erro ao ler o diretório raiz");
+        return;
+    }
+
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            uint32_t data_address = bpb_fdata_addr(bpb) + root[i].low_starting_cluster * bpb->bytes_p_sect;
+            char buffer[root[i].file_size + 1];
+            memset(buffer, 0, sizeof(buffer));
+
+            if (fseek(fp, data_address, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no arquivo");
+                return;
+            }
+
+            if (fread(buffer, sizeof(char), root[i].file_size, fp) != root[i].file_size) {
+                perror("Erro ao ler o arquivo");
+                return;
+            }
+
+            printf("Conteúdo do arquivo %s:\n%s\n", filename, buffer);
+            return;
+        }
+    }
+
+    fprintf(stderr, "Não foi possível encontrar o arquivo %s.\n", filename);
 }
