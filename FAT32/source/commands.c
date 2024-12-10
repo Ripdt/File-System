@@ -197,7 +197,7 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
     bool dentry_failure = true;
 
     for (int i = 0; i < bpb->root_entry_count; i++) 
-        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\'\0')
+        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0')
         {
             uint32_t dest_address = sizeof(struct fat32_dir) * i + root_address;
 
@@ -213,7 +213,7 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
 
     int count = 0;
     struct fat32_newcluster_info next_cluster,
-                                prev_cluster = { .cluster = FAT32_EOF_HI }; // Alterado para FAT32
+                                prev_cluster = { .cluster = FAT32_EOF }; // Alterado para FAT32
 
     uint32_t cluster_count = dir1.fdir.file_size / bpb->bytes_p_sect / bpb->sector_p_clust + 1;
 
@@ -225,7 +225,7 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
         if (next_cluster.cluster == 0x0)
             error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "Disco cheio (imagem foi corrompida)");
 
-        uint32_t fat_entry_address = bpb->fat32_faddress + next_cluster.cluster * sizeof(uint32_t); // Alterado para 32 bits
+        uint32_t fat_entry_address = bpb->sect_per_fat_32 + next_cluster.cluster * sizeof(uint32_t); // Alterado para 32 bits
         (void) fseek(fp, fat_entry_address, SEEK_SET);
         (void) fwrite(&prev_cluster.cluster, sizeof(uint32_t), 1, fp); // Alterado para 32 bits
 
