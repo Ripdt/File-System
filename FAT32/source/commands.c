@@ -90,8 +90,11 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         return;
     }
 
+    printf("Nome convertido para FAT32: '%.*s'\n", 11, fat32_filename);
+
     // Procurar o arquivo no diretório
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%.*s'\n", i, 11, root[i].name, 11, fat32_filename);
         if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             printf("Arquivo %s encontrado no índice %u.\n", filename, i);
 
