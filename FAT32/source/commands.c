@@ -14,6 +14,8 @@
 
 #include <sys/types.h>
 
+ssize_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size);
+
 struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb)
 {
     struct far_dir_searchres res = { .found = false };
@@ -248,4 +250,20 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
     printf("cp %s → %s\n", source, dest);
 
     return;
+}
+
+void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) 
+{ 
+    char buffer[512]; 
+    size_t n; 
+    
+    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) 
+    { 
+        fwrite(buffer, 1, n, stdout); 
+    } 
+    
+    if (ferror(fp)) 
+    { 
+        perror("cat: erro ao ler arquivo"); 
+    }
 }
