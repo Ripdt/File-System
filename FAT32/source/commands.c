@@ -236,44 +236,117 @@ struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
     return dirs;
 }
 
-void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
-{
-    char source_rname[FAT32STR_SIZE_WNULL], dest_rname[FAT32STR_SIZE_WNULL];
-
-    bool badname = cstr_to_fat32_lfn(source, source_rname)
-                || cstr_to_fat32_lfn(dest,   dest_rname);
-
-    if (badname)
-    {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        exit(EXIT_FAILURE);
+void mv(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb) {
+    char source_rname[11], dest_rname[11];
+    memset(source_rname, ' ', 11); // Preencher com espaços
+    memset(dest_rname, ' ', 11);   // Preencher com espaços
+    int srclen = strlen(source), destlen = strlen(dest);
+    for (int i = 0; i < 11 && i < srclen; i++) {
+        source_rname[i] = toupper(source[i]);
+    }
+    for (int i = 0; i < 11 && i < destlen; i++) {
+        dest_rname[i] = toupper(dest[i]);
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
-    uint32_t root_size = sizeof(struct fat32_dir) * bpb->root_entry_count;
+    uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
+    struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
 
-    struct fat32_dir root[root_size];
+    if (fseek(fp, root_address, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return;
+    }
 
-    if (read_bytes(fp, root_address, &root, root_size) == RB_ERROR)
-        error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "erro ao ler struct fat32_dir");
+    if (fread(root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
+        perror("Erro ao ler o diretório raiz");
+        return;
+    }
 
-    struct far_dir_searchres dir1 = find_in_root(root, source_rname, bpb);
-    struct far_dir_searchres dir2 = find_in_root(root, dest_rname, bpb);
+    // Correção do tipo da variável
+    struct fat32_dir_searchres dir1 = find_in_root(root, source_rname, bpb);
+    struct fat32_dir_searchres dir2 = find_in_root(root, dest_rname, bpb);
 
-    if (dir2.found == true)
-        error(EXIT_FAILURE, 0, "Não permitido substituir arquivo %s via mv.", dest);
+    if (dir1.found && !dir2.found) {
+        printf("Movendo arquivo %s para %s\n", source, dest);
+        strncpy((char*)dir1.dir->name, dest_rname, 11);
+        if (fseek(fp, root_address + sizeof(struct fat32_dir) * (dir1.dir - root), SEEK_SET) != 0) {
+            perror("Erro ao posicionar o ponteiro no arquivo");
+            return;
+        }
+        if (fwrite(dir1.dir, sizeof(struct fat32_dir), 1, fp) != 1) {
+            perror("Erro ao escrever a entrada do diretório");
+            return;
+        }
+        printf("Arquivo movido com sucesso.\n");
+    } else if (!dir1.found) {
+        fprintf(stderr, "Arquivo %s não encontrado.\n", source);
+    } else if (dir2.found) {
+        fprintf(stderr, "Arquivo de destino %s já existe.\n", dest);
+    }
+}
 
-    if (dir1.found == false)
-        error(EXIT_FAILURE, 0, "Não foi possível encontrar o arquivo %s.", source);
+void cp(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb) {
+    char source_rname[11], dest_rname[11];
+    memset(source_rname, ' ', 11); // Preencher com espaços
+    memset(dest_rname, ' ', 11);   // Preencher com espaços
+    int srclen = strlen(source), destlen = strlen(dest);
+    for (int i = 0; i < 11 && i < srclen; i++) {
+        source_rname[i] = toupper(source[i]);
+    }
+    for (int i = 0; i < 11 && i < destlen; i++) {
+        dest_rname[i] = toupper(dest[i]);
+    }
 
-    memcpy(dir1.fdir.name, dest_rname, sizeof(char) * FAT32STR_SIZE);
+    uint32_t root_address = bpb_froot_addr(bpb);
+    uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
+    struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
 
-    uint32_t source_address = sizeof(struct fat32_dir) * dir1.idx + root_address;
+    if (fseek(fp, root_address, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return;
+    }
 
-    (void) fseek(fp, source_address, SEEK_SET);
-    (void) fwrite(&dir1.fdir, sizeof(struct fat32_dir), 1, fp);
+    if (fread(root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
+        perror("Erro ao ler o diretório raiz");
+        return;
+    }
 
-    printf("mv %s → %s.\n", source, dest);
+    // Correção do tipo da variável
+    struct fat32_dir_searchres dir1 = find_in_root(root, source_rname, bpb);
+
+    if (!dir1.found) {
+        fprintf(stderr, "Arquivo %s não encontrado.\n", source);
+        return;
+    }
+
+    if (find_in_root(root, dest_rname, bpb).found) {
+        fprintf(stderr, "Arquivo %s já existe no destino.\n", dest);
+        return;
+    }
+
+    // Encontre uma entrada livre no diretório
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == 0xE5) {
+            printf("Copiando arquivo %s para %s\n", source, dest);
+            strncpy((char*)root[i].name, dest_rname, 11);
+            root[i].attr = dir1.dir->attr;
+            root[i].low_starting_cluster = dir1.dir->low_starting_cluster;
+            root[i].file_size = dir1.dir->file_size;
+
+            if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no arquivo");
+                return;
+            }
+            if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
+                perror("Erro ao escrever a entrada do diretório");
+                return;
+            }
+            printf("Arquivo copiado com sucesso.\n");
+            return;
+        }
+    }
+
+    fprintf(stderr, "Não foi possível encontrar uma entrada livre no diretório.\n");
 }
 
 void rm(FILE* fp, char* filename, struct fat32_bpb* bpb, int debug) {
@@ -354,94 +427,6 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb, int debug) {
     } else {
         fprintf(stderr, "Arquivo %s não encontrado.\n", filename);
     }
-}
-
-void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
-{
-    char source_rname[FAT32STR_SIZE_WNULL], dest_rname[FAT32STR_SIZE_WNULL];
-
-    bool badname = cstr_to_fat32_lfn(source, source_rname) // Alterado para FAT32
-                || cstr_to_fat32_lfn(dest, dest_rname);  // Alterado para FAT32
-
-    if (badname)
-    {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    uint32_t root_address = bpb_froot_addr(bpb);
-    uint32_t root_size = sizeof(struct fat32_dir) * bpb->root_entry_count;
-
-    struct fat32_dir root[root_size];
-
-    if (read_bytes(fp, root_address, &root, root_size) == RB_ERROR)
-        error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "erro ao ler struct fat32_dir");
-
-    struct far_dir_searchres dir1 = find_in_root(root, source_rname, bpb);
-
-    if (!dir1.found)
-        error(EXIT_FAILURE, 0, "Não foi possível encontrar o arquivo %s.", source);
-
-    if (find_in_root(root, dest_rname, bpb).found)
-        error(EXIT_FAILURE, 0, "Não permitido substituir arquivo %s via cp.", dest);
-
-    struct fat32_dir new_dir = dir1.fdir;
-    memcpy(new_dir.name, dest_rname, FAT32STR_SIZE); // Alterado para FAT32
-
-    bool dentry_failure = true;
-
-    for (int i = 0; i < bpb->root_entry_count; i++) 
-        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0')
-        {
-            uint32_t dest_address = sizeof(struct fat32_dir) * i + root_address;
-
-            (void) fseek(fp, dest_address, SEEK_SET);
-            (void) fwrite(&new_dir, sizeof(struct fat32_dir), 1, fp);
-
-            dentry_failure = false;
-            break;
-        }
-
-    if (dentry_failure)
-        error_at_line(EXIT_FAILURE, ENOSPC, __FILE__, __LINE__, "Não foi possível alocar uma entrada no diretório raiz.");
-
-    int count = 0;
-    struct fat32_newcluster_info next_cluster,
-                                prev_cluster = { .cluster = FAT32_EOF }; // Alterado para FAT32
-
-    uint32_t cluster_count = dir1.fdir.file_size / bpb->bytes_p_sect / bpb->sector_p_clust + 1;
-
-    while (cluster_count--)
-    {
-        prev_cluster = next_cluster;
-        next_cluster = fat32_find_free_cluster(fp, bpb); // Alterado para FAT32
-
-        if (next_cluster.cluster == 0x0)
-            error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "Disco cheio (imagem foi corrompida)");
-
-        uint32_t fat_entry_address = bpb->sect_per_fat_32 + next_cluster.cluster * sizeof(uint32_t); // Alterado para 32 bits
-        (void) fseek(fp, fat_entry_address, SEEK_SET);
-        (void) fwrite(&prev_cluster.cluster, sizeof(uint32_t), 1, fp); // Alterado para 32 bits
-
-        prev_cluster = next_cluster;
-        count++;
-    }
-
-    uint32_t cluster_address = bpb_fdata_addr(bpb);
-    uint32_t cur_addr, src_addr;
-
-    for (int i = 0; i < count; i++) {
-        cur_addr = cluster_address + i * bpb->sector_p_clust * bpb->bytes_p_sect;
-        src_addr = dir1.fdir.low_starting_cluster * bpb->sector_p_clust * bpb->bytes_p_sect; // Alterado para considerar low e high clusters
-
-        uint8_t buffer[bpb->sector_p_clust * bpb->bytes_p_sect]; // Buffer para ler os dados
-        (void) read_bytes(fp, src_addr, buffer, sizeof(buffer));
-        (void) write_bytes(fp, cur_addr, buffer, sizeof(buffer)); // Escrever o buffer no endereço de destino
-    }
-
-    printf("cp %s → %s\n", source, dest);
-
-    return;
 }
 
 void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) {
