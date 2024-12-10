@@ -138,10 +138,11 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
 }
 
 void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32_MAX_LFN_SIZE];
-    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        return;
+    char fat32_filename[11];
+    memset(fat32_filename, ' ', 11); // Preencher com espaços
+    int len = strlen(filename);
+    for (int i = 0; i < 11 && i < len; i++) {
+        fat32_filename[i] = toupper(filename[i]);
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
@@ -158,47 +159,40 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         return;
     }
 
-    // Verificar se o arquivo já existe para evitar duplicatas
+    // Verificar se o arquivo já existe
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             printf("Arquivo %s já existe.\n", filename);
             return;
         }
     }
 
-    // Criar nova entrada de diretório
+    // Encontrar uma entrada livre no diretório
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
-            memset(&root[i], 0, sizeof(struct fat32_dir));
+        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == 0xE5) {
+            printf("Entrada livre encontrada no índice %u.\n", i);
+
+            // Preencher os dados da nova entrada de diretório
             strncpy((char*)root[i].name, fat32_filename, 11);
-            root[i].attr = 0x20;
+            root[i].attr = 0x20; // Atributo de arquivo
+
+            // Encontrar um cluster livre
             struct fat32_newcluster_info cluster_info = fat32_find_free_cluster(fp, bpb);
             if (cluster_info.cluster == 0) {
                 fprintf(stderr, "Nenhum cluster livre disponível.\n");
                 return;
             }
+
             root[i].low_starting_cluster = cluster_info.cluster;
             root[i].file_size = 0;
-
-            // Atualizar a tabela FAT com o novo cluster
-            uint32_t fat_offset = cluster_info.cluster * 4;
-            uint32_t fat_entry = 0x0FFFFFFF; // Endereço do fim de arquivo
-            uint32_t fat_address = (bpb->reserved_sect * bpb->bytes_p_sect) + fat_offset;
-            if (fseek(fp, fat_address, SEEK_SET) != 0) {
-                perror("Erro ao posicionar o ponteiro na FAT");
-                return;
-            }
-            if (fwrite(&fat_entry, sizeof(fat_entry), 1, fp) != 1) {
-                perror("Erro ao atualizar a FAT");
-                return;
-            }
 
             if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro no arquivo");
                 return;
             }
+
             if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
-                perror("Erro ao criar a entrada do diretório");
+                perror("Erro ao escrever a nova entrada do diretório");
                 return;
             }
 
@@ -207,7 +201,7 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         }
     }
 
-    fprintf(stderr, "Não foi possível criar o arquivo %s. Diretório raiz cheio.\n", filename);
+    fprintf(stderr, "Diretório raiz cheio. Não foi possível criar o arquivo %s.\n", filename);
 }
 
 struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
