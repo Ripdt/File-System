@@ -14,7 +14,49 @@
 
 #include <sys/types.h>
 
-size_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size);
+void write(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
+    uint32_t root_address = bpb_froot_addr(bpb);
+    uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
+    struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
+
+    if (fseek(fp, root_address, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return;
+    }
+
+    if (fread(root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
+        perror("Erro ao ler o diretório raiz");
+        return;
+    }
+
+    for (int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        if (strncmp(root[i].name, filename, strlen(filename)) == 0) {
+            uint32_t data_address = bpb->data_address + root[i].low_starting_cluster * bpb->bytes_p_sect;
+            size_t data_size = strlen(data);
+            if (write_bytes(fp, data_address, data, data_size) != data_size) {
+                perror("Erro ao escrever no arquivo");
+                return;
+            }
+            root[i].file_size = data_size;
+
+            // Atualizar entrada do diretório com novo tamanho de arquivo
+            uint32_t entry_address = root_address + sizeof(struct fat32_dir) * i;
+            if (fseek(fp, entry_address, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no arquivo");
+                return;
+            }
+            if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
+                perror("Erro ao atualizar entrada do diretório");
+                return;
+            }
+
+            printf("Dados escritos no arquivo %s com sucesso.\n", filename);
+            return;
+        }
+    }
+
+    fprintf(stderr, "Não foi possível encontrar o arquivo %s.\n", filename);
+}
 
 struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb)
 {

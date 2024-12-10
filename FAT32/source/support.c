@@ -5,9 +5,12 @@
 #include <stdbool.h>
 #include "fat32.h"  // Alterado para incluir a header do FAT32
 
-size_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size) 
-{ 
-    fseek(fp, addr, SEEK_SET); return fwrite(buffer, 1, size, fp); 
+size_t write_bytes(FILE *fp, uint32_t addr, void *buffer, size_t size) {
+    if (fseek(fp, addr, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return 0;
+    }
+    return fwrite(buffer, sizeof(char), size, fp);
 }
 
 /* Manipula o nome longo de arquivos para o formato FAT32 LFN */
