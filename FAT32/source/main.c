@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 
         else if (strcmp(command, "rm") == 0)
         {
-            rm(fp, argv[2], &bpb);  // Remove arquivos, ajustada para FAT32
+            rm(fp, argv[2], &bpb, 0);  // Remove arquivos, ajustada para FAT32, desativar depuração
             fclose(fp);
         }
 
