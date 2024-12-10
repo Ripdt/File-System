@@ -35,9 +35,12 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         return;
     }
 
-    // Imprimir nomes de arquivos no diretório raiz
+    // Imprimir apenas entradas de arquivos não vazias no diretório raiz
+    printf("Arquivos no diretório raiz:\n");
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        printf("Arquivo no diretório raiz: %.11s\n", root[i].name);
+        if (root[i].name[0] != DIR_FREE_ENTRY && root[i].name[0] != '\0') {
+            printf("%.11s\n", root[i].name);
+        }
     }
 
     // Comparação insensível a maiúsculas e minúsculas e lidando com a extensão
