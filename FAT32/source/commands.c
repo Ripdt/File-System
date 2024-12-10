@@ -36,7 +36,6 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         return;
     }
 
-    // Comparação insensível a maiúsculas e minúsculas e lidando com a extensão
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             uint32_t data_address = bpb_fdata_addr(bpb) + root[i].low_starting_cluster * bpb->bytes_p_sect;
