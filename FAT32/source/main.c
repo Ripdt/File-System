@@ -65,7 +65,8 @@ int main(int argc, char **argv)
 
         if (strcmp(command, "ls") == 0)
         {
-            ls(fp, &bpb);  // Apenas chamar a função ls para exibir os arquivos
+            struct fat32_dir *dirs = ls(fp, &bpb);  // Listagem de arquivos, ajustada para FAT32
+            show_files(dirs, &bpb);  // Exibe os arquivos, ajustada para FAT32
         }
 
         else if (strcmp(command, "cp") == 0)
