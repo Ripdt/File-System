@@ -101,11 +101,11 @@ int main(int argc, char **argv)
 
         else if (strcmp(command, "write") == 0)
         {
-            if (argc != 4) {
+            if (argc != 5) {
                 fprintf(stderr, "Usage: %s write <filename> <data> <fat32-img>\n", argv[0]);
                 return EXIT_FAILURE;
             }
-            write(fp, argv[2], argv[3], &bpb);  // Escreve dados em um arquivo, ajustada para FAT32
+            write_to_file(fp, argv[2], argv[3], &bpb);  // Escreve dados em um arquivo, ajustada para FAT32
             fclose(fp);
         }
 

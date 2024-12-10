@@ -14,7 +14,7 @@
 
 #include <sys/types.h>
 
-void write(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
+void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
     uint32_t root_address = bpb_froot_addr(bpb);
     uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
     struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
@@ -29,9 +29,9 @@ void write(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
         return;
     }
 
-    for (int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncmp(root[i].name, filename, strlen(filename)) == 0) {
-            uint32_t data_address = bpb->data_address + root[i].low_starting_cluster * bpb->bytes_p_sect;
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        if (strncmp((const char*)root[i].name, filename, strlen(filename)) == 0) {
+            uint32_t data_address = bpb_fdata_addr(bpb) + root[i].low_starting_cluster * bpb->bytes_p_sect;
             size_t data_size = strlen(data);
             if (write_bytes(fp, data_address, data, data_size) != data_size) {
                 perror("Erro ao escrever no arquivo");
