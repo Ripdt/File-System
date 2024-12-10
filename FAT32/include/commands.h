@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "fat32.h"  // Atualizado para incluir o arquivo de cabeçalho FAT32
 
+void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb);
+
 /*
  * Esta struct encapsula o resultado de find(), carregando informações sobre a
  * busca consigo.
