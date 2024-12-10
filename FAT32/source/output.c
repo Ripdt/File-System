@@ -34,7 +34,7 @@ static struct pretty_int { int num; char* suff; } pretty_print(int value)
 /*
  * Exibe os arquivos presentes no diretório, agora considerando a estrutura de FAT32
  */
-void show_files(struct fat32_dir *dirs, struct fat32_bpb *bpb)
+void show_files(struct fat32_dir *dirs, struct fat32_bpb *bpb __attribute__((unused)))
 {
     struct fat32_dir *cur;
 

@@ -234,11 +234,15 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
     }
 
     uint32_t cluster_address = bpb_fdata_addr(bpb);
-    for (int i = 0; i < count; i++) {
-        uint32_t cur_addr = cluster_address + i * bpb->sector_p_clust * bpb->bytes_p_sect;
-        uint32_t src_addr = dir1.fdir.low_starting_cluster * bpb->sector_p_clust * bpb->bytes_p_sect; // Alterado para considerar low e high clusters
+    uint32_t cur_addr, src_addr;
 
-        (void) read_bytes(fp, src_addr, (void*) cur_addr, bpb->sector_p_clust * bpb->bytes_p_sect);
+    for (int i = 0; i < count; i++) {
+        cur_addr = cluster_address + i * bpb->sector_p_clust * bpb->bytes_p_sect;
+        src_addr = dir1.fdir.low_starting_cluster * bpb->sector_p_clust * bpb->bytes_p_sect; // Alterado para considerar low e high clusters
+
+        uint8_t buffer[bpb->sector_p_clust * bpb->bytes_p_sect]; // Buffer para ler os dados
+        (void) read_bytes(fp, src_addr, buffer, sizeof(buffer));
+        (void) write_bytes(fp, cur_addr, buffer, sizeof(buffer)); // Escrever o buffer no endereço de destino
     }
 
     printf("cp %s → %s\n", source, dest);
