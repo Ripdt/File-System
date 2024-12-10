@@ -16,6 +16,8 @@ void usage(char *executable)
     fprintf(stdout, "\t%s cp <path> <dest> <fat32-img> - Copy files from the image path to local dest.\n", executable);
     fprintf(stdout, "\t%s mv <path> <dest> <fat32-img> - Move files from the path to the FAT32 path\n", executable);
     fprintf(stdout, "\t%s rm <path> <file> <fat32-img> - Remove files from the path to the FAT32 path\n", executable);
+    fprintf(stdout, "\t%s cat <path> <fat32-img> - Display the content of the file from the FAT32 path\n", executable);
+    fprintf(stdout, "\t%s create <filename> <fat32-img> - Create a file in the FAT32 image\n", executable);
     fprintf(stdout, "\n");
     fprintf(stdout, "\tfat32-img needs to be a valid FAT32 image.\n\n");
 }
@@ -79,6 +81,12 @@ int main(int argc, char **argv)
         else if (strcmp(command, "cat") == 0)
         {
             cat(fp, argv[2], &bpb);  // Exibe conteúdo de arquivo, ajustada para FAT32
+            fclose(fp);
+        }
+
+        else if (strcmp(command, "create") == 0)
+        {
+            create(fp, argv[2], &bpb);  // Cria um novo arquivo, ajustada para FAT32
             fclose(fp);
         }
     }

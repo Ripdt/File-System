@@ -25,6 +25,8 @@ struct fat32_newcluster_info
     uint32_t address;
 };
 
+void create(FILE* fp, char* filename, struct fat32_bpb* bpb);
+
 /* listar arquivos no fat32_bpb */
 struct fat32_dir *ls(FILE *, struct fat32_bpb *);
 
