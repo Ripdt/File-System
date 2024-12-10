@@ -7,8 +7,6 @@
 
 #define FAT32_MAX_LFN_SIZE 255
 
-bool cstr_to_fat16wnull(char *filename, char output[FAT16STR_SIZE_WNULL]);
-
 bool cstr_to_fat32_lfn(char *filename, char output[FAT32_MAX_LFN_SIZE]);
 
 #endif
