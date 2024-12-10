@@ -30,7 +30,7 @@ struct fat32_newcluster_info
 void create(FILE* fp, char* filename, struct fat32_bpb* bpb);
 
 /* listar arquivos no fat32_bpb */
-struct fat32_dir *ls(FILE *, struct fat32_bpb *);
+void ls(FILE*, struct fat32_bpb*);
 
 /* mover um arquivo da fonte ao destino */
 void mv(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb);
