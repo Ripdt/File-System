@@ -119,12 +119,12 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
             memset(&root[i], 0, sizeof(struct fat32_dir));
             strncpy((char*)root[i].name, fat32_filename, 11);
             root[i].attr = 0x20;
-            uint32_t cluster = fat32_find_free_cluster(fp, bpb);
-            if (cluster == 0) {
+            struct fat32_newcluster_info cluster_info = fat32_find_free_cluster(fp, bpb);
+            if (cluster_info.cluster == 0) {
                 fprintf(stderr, "Nenhum cluster livre disponível.\n");
                 return;
             }
-            root[i].low_starting_cluster = cluster;
+            root[i].low_starting_cluster = cluster_info.cluster;
             root[i].file_size = 0;
 
             if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
