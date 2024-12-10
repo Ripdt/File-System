@@ -289,7 +289,6 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     printf("Iniciando a remoção do arquivo %s...\n", filename);
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        // Imprimir nome do arquivo e nome comparado
         printf("Verificando entrada do diretório %u: nome='%s', comparando com '%s'\n", i, root[i].name, fat32_filename);
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             found = 1;
@@ -309,6 +308,21 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
                 return;
             }
 
+            // Verificar se a entrada do diretório foi limpa corretamente
+            struct fat32_dir check_dir;
+            if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
+                perror("Erro ao reposicionar o ponteiro no arquivo para verificação");
+                return;
+            }
+            if (fread(&check_dir, sizeof(struct fat32_dir), 1, fp) != 1) {
+                perror("Erro ao ler a entrada do diretório após limpeza");
+                return;
+            }
+            if (check_dir.name[0] != DIR_FREE_ENTRY) {
+                fprintf(stderr, "A entrada do diretório não foi limpa corretamente. Verificado nome: %s\n", check_dir.name);
+                return;
+            }
+
             // Limpar a FAT
             printf("Limpando a FAT para o cluster %u...\n", cluster);
             uint32_t fat_offset = cluster * 4;
@@ -322,6 +336,8 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
                 perror("Erro ao limpar a FAT");
                 return;
             }
+
+            printf("Cluster %u limpo na FAT.\n", cluster);
         }
     }
 
