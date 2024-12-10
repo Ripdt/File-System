@@ -16,6 +16,53 @@
 
 #include <sys/types.h>
 
+#include "commands.h"
+#include "support.h"
+#include "fat32.h"
+#include <stdio.h>
+
+struct fat32_newcluster_info fat32_find_free_cluster(FILE* fp, struct fat32_bpb* bpb) {
+    struct fat32_newcluster_info info = {0, 0};
+
+    uint32_t fat_start = bpb->reserved_sect * bpb->bytes_p_sect;
+    uint32_t fat_size = bpb->fat_sz_32 * bpb->bytes_p_sect;
+
+    // Percorrer a tabela FAT para encontrar um cluster livre
+    for (uint32_t offset = 0; offset < fat_size; offset += 4) {
+        uint32_t cluster_entry;
+        if (fseek(fp, fat_start + offset, SEEK_SET) != 0) {
+            perror("Erro ao posicionar o ponteiro na tabela FAT");
+            return info;
+        }
+        if (fread(&cluster_entry, sizeof(cluster_entry), 1, fp) != 1) {
+            perror("Erro ao ler a tabela FAT");
+            return info;
+        }
+
+        if (cluster_entry == 0) {  // Cluster livre encontrado
+            uint32_t cluster_num = offset / 4;
+            info.cluster = cluster_num;
+            info.address = fat_start + offset;
+
+            // Atualizar a tabela FAT para marcar o cluster como utilizado
+            uint32_t end_of_cluster_chain = 0x0FFFFFFF; // End of cluster chain marker
+            if (fseek(fp, fat_start + offset, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro na tabela FAT para atualização");
+                return info;
+            }
+            if (fwrite(&end_of_cluster_chain, sizeof(end_of_cluster_chain), 1, fp) != 1) {
+                perror("Erro ao atualizar a tabela FAT");
+                return info;
+            }
+
+            return info;
+        }
+    }
+
+    fprintf(stderr, "Nenhum cluster livre disponível.\n");
+    return info;
+}
+
 void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
     char fat32_filename[FAT32_MAX_LFN_SIZE];
     if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
@@ -162,7 +209,7 @@ struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
 {
     uint32_t root_addr = bpb_froot_addr(bpb);
     uint32_t max_entries = bpb->sector_p_clust * bpb->bytes_p_sect / sizeof(struct fat32_dir);
-    
+
     struct fat32_dir *dirs = malloc(sizeof(struct fat32_dir) * max_entries);
     for (uint32_t i = 0; i < max_entries; i++)
     {
@@ -171,20 +218,6 @@ struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
     }
     
     return dirs;
-}
-
-void show_files(struct fat32_dir *dirs, struct fat32_bpb *bpb) {
-    uint32_t max_entries = bpb->sector_p_clust * bpb->bytes_p_sect / sizeof(struct fat32_dir);
-
-    printf("ATTR  NAME            SIZE\n");
-    printf("-------------------------\n");
-    for (uint32_t i = 0; i < max_entries; i++) {
-        if (dirs[i].name[0] != DIR_FREE_ENTRY && dirs[i].name[0] != '\0') {
-            printf("0x%02x  %-11s    %d B\n", dirs[i].attr, dirs[i].name, dirs[i].file_size);
-        }
-    }
-
-    free(dirs);
 }
 
 void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
