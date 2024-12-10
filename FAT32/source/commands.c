@@ -265,13 +265,6 @@ void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
     printf("mv %s → %s.\n", source, dest);
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "fat32.h"
-#include "commands.h"
-#include "support.h"
-
 void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     char fat32_filename[FAT32_MAX_LFN_SIZE];
     if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
@@ -296,6 +289,8 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     printf("Iniciando a remoção do arquivo %s...\n", filename);
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        // Imprimir nome do arquivo e nome comparado
+        printf("Verificando entrada do diretório %u: nome='%s', comparando com '%s'\n", i, root[i].name, fat32_filename);
         if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             found = 1;
             uint32_t cluster = root[i].low_starting_cluster;
