@@ -40,8 +40,9 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         printf("Arquivo no diretório raiz: %.11s\n", root[i].name);
     }
 
+    // Comparação insensível a maiúsculas e minúsculas e lidando com a extensão
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncmp((const char*)root[i].name, fat32_filename, FAT32_MAX_LFN_SIZE) == 0) {
+        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             uint32_t data_address = bpb_fdata_addr(bpb) + root[i].low_starting_cluster * bpb->bytes_p_sect;
             size_t data_size = strlen(data);
             if (write_bytes(fp, data_address, data, data_size) != data_size) {
