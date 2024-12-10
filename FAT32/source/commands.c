@@ -105,12 +105,22 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         return;
     }
 
+    // Verificar se o arquivo já existe para evitar duplicatas
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            printf("Arquivo %s já existe.\n", filename);
+            return;
+        }
+    }
+
+    // Criar nova entrada de diretório
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
             memset(&root[i], 0, sizeof(struct fat32_dir));
             strncpy((char*)root[i].name, fat32_filename, 11);
             root[i].attr = 0x20;
             root[i].low_starting_cluster = 2; // Defina o cluster inicial (ajuste conforme necessário)
+            root[i].file_size = 0;
 
             if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro no arquivo");
