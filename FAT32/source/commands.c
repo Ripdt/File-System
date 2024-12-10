@@ -36,25 +36,24 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
     return res;
 }
 
-void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
-{
+void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     char fat32_filename[FAT32_MAX_LFN_SIZE];
     if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
         fprintf(stderr, "Nome de arquivo inválido.\n");
         return;
     }
 
-    uint32_t root_dir_sectors = ((bpb->root_entry_count * 32) + (bpb->bytes_per_sector - 1)) / bpb->bytes_per_sector;
-    uint32_t root_address = bpb->reserved_sectors + (bpb->num_fat * bpb->sectors_per_fat32);
-    root_address *= bpb->bytes_per_sector;
+    uint32_t root_dir_sectors = ((bpb->root_entry_count * 32) + (bpb->bytes_p_sect - 1)) / bpb->bytes_p_sect;
+    uint32_t root_address = bpb->reserved_sect + (bpb->n_fat * bpb->sect_per_fat_32);
+    root_address *= bpb->bytes_p_sect;
 
-    struct fat32_dir root[root_dir_sectors * bpb->bytes_per_sector / sizeof(struct fat32_dir)];
+    struct fat32_dir root[root_dir_sectors * bpb->bytes_p_sect / sizeof(struct fat32_dir)];
 
     if (read_bytes(fp, root_address, &root, sizeof(root)) == RB_ERROR) {
         error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "Erro ao ler o diretório raiz");
     }
 
-    for (int i = 0; i < root_dir_sectors * bpb->bytes_per_sector / sizeof(struct fat32_dir); i++) {
+    for (int i = 0; i < root_dir_sectors * bpb->bytes_p_sect / sizeof(struct fat32_dir); i++) {
         if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
             memset(&root[i], 0, sizeof(struct fat32_dir));
             memcpy(root[i].name, fat32_filename, FAT32_MAX_LFN_SIZE);
