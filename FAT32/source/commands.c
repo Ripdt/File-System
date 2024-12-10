@@ -268,7 +268,8 @@ void mv(FILE *fp, char *source, char* dest, struct fat32_bpb *bpb)
 void rm(FILE* fp, char* filename, struct fat32_bpb* bpb, int debug) {
     char fat32_filename[11];
     memset(fat32_filename, ' ', 11); // Preencher com espaços
-    for (int i = 0; i < 11 && filename[i] != '\0'; i++) {
+    int len = strlen(filename);
+    for (int i = 0; i < 11 && i < len; i++) {
         fat32_filename[i] = toupper(filename[i]);
     }
 
@@ -288,11 +289,12 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb, int debug) {
 
     if (debug) {
         printf("Iniciando a remoção do arquivo %s...\n", filename);
+        printf("Nome convertido para FAT32: '%.*s'\n", 11, fat32_filename);
     }
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (debug) {
-            printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%s'\n", i, 11, root[i].name, fat32_filename);
+            printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%.*s'\n", i, 11, root[i].name, 11, fat32_filename);
         }
         if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             found = 1;
