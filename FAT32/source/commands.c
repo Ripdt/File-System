@@ -43,17 +43,22 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
         return;
     }
 
-    uint32_t root_dir_sectors = ((bpb->root_entry_count * 32) + (bpb->bytes_p_sect - 1)) / bpb->bytes_p_sect;
-    uint32_t root_address = bpb->reserved_sect + (bpb->n_fat * bpb->sect_per_fat_32);
-    root_address *= bpb->bytes_p_sect;
+    uint32_t root_address = bpb->reserved_sect * bpb->bytes_p_sect + (bpb->n_fat * bpb->sect_per_fat_32 * bpb->bytes_p_sect);
+    uint32_t root_entries = bpb->root_entry_count;
 
-    struct fat32_dir root[root_dir_sectors * bpb->bytes_p_sect / sizeof(struct fat32_dir)];
+    struct fat32_dir root[root_entries];
 
-    if (read_bytes(fp, root_address, &root, sizeof(root)) == RB_ERROR) {
-        error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "Erro ao ler o diretório raiz");
+    if (fseek(fp, root_address, SEEK_SET) != 0) {
+        perror("Erro ao posicionar o ponteiro no arquivo");
+        return;
     }
 
-    for (int i = 0; i < root_dir_sectors * bpb->bytes_p_sect / sizeof(struct fat32_dir); i++) {
+    if (fread(&root, sizeof(struct fat32_dir), root_entries, fp) != root_entries) {
+        perror("Erro ao ler o diretório raiz");
+        return;
+    }
+
+    for (int i = 0; i < root_entries; i++) {
         if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
             memset(&root[i], 0, sizeof(struct fat32_dir));
             memcpy(root[i].name, fat32_filename, FAT32_MAX_LFN_SIZE);
