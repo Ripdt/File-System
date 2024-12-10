@@ -3,7 +3,7 @@
 #include <string.h>
 #include <locale.h>
 
-#include "fat32.h"  // Alterado para incluir o header do FAT32
+#include "fat32.h"
 #include "commands.h"
 #include "output.h"
 #include "support.h"
@@ -65,8 +65,7 @@ int main(int argc, char **argv)
 
         if (strcmp(command, "ls") == 0)
         {
-            struct fat32_dir *dirs = ls(fp, &bpb);  // Listagem de arquivos, ajustada para FAT32
-            show_files(dirs, &bpb);  // Exibe os arquivos, ajustada para FAT32
+            ls(fp, &bpb);  // Apenas chamar a função ls para exibir os arquivos
         }
 
         else if (strcmp(command, "cp") == 0)
