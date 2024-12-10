@@ -162,14 +162,14 @@ struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
 {
     uint32_t root_addr = bpb_froot_addr(bpb);
     uint32_t max_entries = bpb->sector_p_clust * bpb->bytes_p_sect / sizeof(struct fat32_dir);
-
+    
     struct fat32_dir *dirs = malloc(sizeof(struct fat32_dir) * max_entries);
-
-    for (uint32_t i = 0; i < max_entries; i++) {
+    for (uint32_t i = 0; i < max_entries; i++)
+    {
         uint32_t offset = root_addr + i * sizeof(struct fat32_dir);
         read_bytes(fp, offset, &dirs[i], sizeof(dirs[i]));
     }
-
+    
     return dirs;
 }
 
