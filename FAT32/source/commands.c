@@ -84,8 +84,7 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
     return res;
 }
 
-void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
-{
+void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     char fat32_filename[FAT32_MAX_LFN_SIZE];
     if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
         fprintf(stderr, "Nome de arquivo inválido.\n");
@@ -94,7 +93,6 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
 
     uint32_t root_address = bpb_froot_addr(bpb);
     uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
-
     struct fat32_dir root[root_size / sizeof(struct fat32_dir)];
 
     if (fseek(fp, root_address, SEEK_SET) != 0) {
@@ -102,26 +100,24 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
         return;
     }
 
-    if (fread(&root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
+    if (fread(root, sizeof(struct fat32_dir), root_size / sizeof(struct fat32_dir), fp) != root_size / sizeof(struct fat32_dir)) {
         perror("Erro ao ler o diretório raiz");
         return;
     }
 
-    for (int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
+    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
         if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
             memset(&root[i], 0, sizeof(struct fat32_dir));
-            memcpy(root[i].name, fat32_filename, FAT32_MAX_LFN_SIZE);
-            root[i].attr = 0x20; // Definir atributos do arquivo (arquivo normal)
-            root[i].low_starting_cluster = 0; // Inicialmente, sem clusters alocados
-            root[i].file_size = 0; // Tamanho inicial é 0
+            strncpy((char*)root[i].name, fat32_filename, 11);
+            root[i].attr = 0x20;
+            root[i].low_starting_cluster = 2; // Defina o cluster inicial (ajuste conforme necessário)
 
-            uint32_t new_file_address = root_address + sizeof(struct fat32_dir) * i;
-            if (fseek(fp, new_file_address, SEEK_SET) != 0) {
+            if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
                 perror("Erro ao posicionar o ponteiro no arquivo");
                 return;
             }
             if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
-                perror("Erro ao escrever no arquivo");
+                perror("Erro ao criar a entrada do diretório");
                 return;
             }
 
@@ -130,7 +126,7 @@ void create(FILE* fp, char* filename, struct fat32_bpb* bpb)
         }
     }
 
-    fprintf(stderr, "Não foi possível criar o arquivo. Diretório raiz cheio.\n");
+    fprintf(stderr, "Não foi possível criar o arquivo %s. Diretório raiz cheio.\n", filename);
 }
 
 struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
