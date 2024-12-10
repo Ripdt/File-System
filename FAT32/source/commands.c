@@ -16,11 +16,8 @@
 #include <sys/types.h>
 
 void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32_MAX_LFN_SIZE];
-    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        return;
-    }
+    char fat32_filename[11];
+    copy_fat32_filename(fat32_filename, filename);
 
     uint32_t root_address = bpb_froot_addr(bpb);
     uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
@@ -37,8 +34,8 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
     }
 
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
-            uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->bytes_p_sect;
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->sectors_per_cluster * bpb->bytes_per_sector;
             size_t data_size = strlen(data);
             if (write_bytes(fp, data_address, data, data_size) != data_size) {
                 perror("Erro ao escrever no arquivo");
@@ -361,11 +358,8 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
 }
 
 void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32_MAX_LFN_SIZE];
-    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        return;
-    }
+    char fat32_filename[11];
+    copy_fat32_filename(fat32_filename, filename);
 
     uint32_t root_address = bpb_froot_addr(bpb);
     uint32_t root_size = bpb->root_entry_count * sizeof(struct fat32_dir);
@@ -382,8 +376,8 @@ void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) {
     }
 
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
-            uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->bytes_p_sect;
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->sectors_per_cluster * bpb->bytes_per_sector;
             char buffer[root[i].file_size + 1];
             memset(buffer, 0, sizeof(buffer));
 
