@@ -36,15 +36,40 @@ struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, st
     return res;
 }
 
-void create(FILE* fp __attribute__((unused)), char* filename, struct fat32_bpb* bpb __attribute__((unused)))
-{
-    FILE *file = fopen(filename, "w");
-    if (file == NULL) {
-        perror("Could not open file");
-        exit(EXIT_FAILURE);
+void create(FILE* fp, char* filename, struct fat32_bpb* bpb) {
+    char fat32_filename[FAT32STR_SIZE_WNULL];
+    if (cstr_to_fat32_lfn(filename, fat32_filename)) {
+        fprintf(stderr, "Nome de arquivo inválido.\n");
+        return;
     }
-    fclose(file);
-    printf("File %s created successfully.\n", filename);
+
+    uint32_t root_address = bpb_froot_addr(bpb);
+    uint32_t root_size = sizeof(struct fat32_dir) * bpb->root_entry_count;
+
+    struct fat32_dir root[root_size];
+
+    if (read_bytes(fp, root_address, &root, root_size) == RB_ERROR) {
+        error_at_line(EXIT_FAILURE, EIO, __FILE__, __LINE__, "Erro ao ler o diretório raiz");
+    }
+
+    for (int i = 0; i < bpb->root_entry_count; i++) {
+        if (root[i].name[0] == DIR_FREE_ENTRY || root[i].name[0] == '\0') {
+            memset(&root[i], 0, sizeof(struct fat32_dir));
+            memcpy(root[i].name, fat32_filename, FAT32STR_SIZE);
+            root[i].attr = 0x20; // Definir atributos do arquivo (arquivo normal)
+            root[i].low_starting_cluster = 0; // Inicialmente, sem clusters alocados
+            root[i].file_size = 0; // Tamanho inicial é 0
+
+            uint32_t new_file_address = root_address + sizeof(struct fat32_dir) * i;
+            (void) fseek(fp, new_file_address, SEEK_SET);
+            (void) fwrite(&root[i], sizeof(struct fat32_dir), 1, fp);
+
+            printf("Arquivo %s criado com sucesso.\n", filename);
+            return;
+        }
+    }
+
+    fprintf(stderr, "Não foi possível criar o arquivo. Diretório raiz cheio.\n");
 }
 
 struct fat32_dir *ls(FILE *fp, struct fat32_bpb *bpb)
