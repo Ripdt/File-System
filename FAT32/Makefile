@@ -1,11 +1,11 @@
 INCLUDE = include
-SOURCE  = source
-BUILD   = build
+SOURCE = source
+BUILD = build
 
-CC    = cc
+CC = cc
 CARGS = -Wall -Wextra -g -O0 -I$(INCLUDE) -pedantic -std=c11
 
-OBJS    = $(shell find $(SOURCE) -type f -name '*.c' | sed 's/\.c*$$/\.o/; s/$(SOURCE)\//$(BUILD)\//')
+OBJS = $(shell find $(SOURCE) -type f -name '*.c' | sed 's/\.c$$/\.o/; s/$(SOURCE)\//$(BUILD)\//')
 HEADERS = $(shell find $(INCLUDE) -type f -name '*.h')
 
 NAME = obese32
@@ -15,7 +15,7 @@ NAME = obese32
 all: $(NAME)
 
 builddir:
-    @if [ ! -d "build" ] ; then mkdir build ; fi
+    @if [ ! -d "build" ]; then mkdir build ; fi
 
 resetimg:
     @cp -v backup.img disk.img
