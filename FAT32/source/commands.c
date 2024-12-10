@@ -98,47 +98,7 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
     }
 
     // Procurar o arquivo no diretório
-    for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        printf("Verificando entrada do diretório %u: nome='%.*s', comparando com '%.*s'\n", i, 11, root[i].name, 11, fat32_filename);
-        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
-            printf("Arquivo %s encontrado no índice %u.\n", filename, i);
-
-            uint32_t cluster = root[i].low_starting_cluster;
-            uint32_t cluster_address = (bpb->reserved_sect + (cluster - 2) * bpb->sector_p_clust) * bpb->bytes_p_sect;
-
-            // Posicionar o ponteiro no cluster do arquivo
-            if (fseek(fp, cluster_address, SEEK_SET) != 0) {
-                perror("Erro ao posicionar o ponteiro no cluster do arquivo");
-                return;
-            }
-
-            // Escrever os dados no arquivo
-            if (fwrite(data, strlen(data), 1, fp) != 1) {
-                perror("Erro ao escrever os dados no arquivo");
-                return;
-            }
-
-            // Atualizar o tamanho do arquivo no diretório
-            root[i].file_size = strlen(data);
-
-            // Escrever a entrada do diretório de volta ao disco
-            if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
-                perror("Erro ao posicionar o ponteiro no diretório para atualizar o tamanho do arquivo");
-                return;
-            }
-            if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
-                perror("Erro ao atualizar o diretório com o tamanho do arquivo");
-                return;
-            }
-
-            printf("Dados escritos com sucesso no arquivo %s.\n", filename);
-            return;
-        }
-    }
-
-    fprintf(stderr, "Não foi possível encontrar o arquivo %s.\n", filename);
-}
-
+    for (unsigned int i = 0; i < root_size / sizeof(struct
 struct far_dir_searchres find_in_root(struct fat32_dir *dirs, char *filename, struct fat32_bpb *bpb)
 {
     struct far_dir_searchres res = { .found = false };
