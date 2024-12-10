@@ -69,10 +69,11 @@ struct fat32_newcluster_info fat32_find_free_cluster(FILE* fp, struct fat32_bpb*
 }
 
 void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) {
-    char fat32_filename[FAT32_MAX_LFN_SIZE];
-    if (!cstr_to_fat32_lfn(filename, fat32_filename)) {
-        fprintf(stderr, "Nome de arquivo inválido.\n");
-        return;
+    char fat32_filename[11];
+    memset(fat32_filename, ' ', 11); // Preencher com espaços
+    int len = strlen(filename);
+    for (int i = 0; i < 11 && i < len; i++) {
+        fat32_filename[i] = toupper(filename[i]);
     }
 
     uint32_t root_address = bpb_froot_addr(bpb);
@@ -89,27 +90,40 @@ void write_to_file(FILE* fp, char* filename, char* data, struct fat32_bpb* bpb) 
         return;
     }
 
+    // Procurar o arquivo no diretório
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
-            uint32_t data_address = bpb_fdata_addr(bpb) + (root[i].low_starting_cluster - 2) * bpb->sector_p_clust * bpb->bytes_p_sect;
-            size_t data_size = strlen(data);
-            if (write_bytes(fp, data_address, data, data_size) != data_size) {
-                perror("Erro ao escrever no arquivo");
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+            printf("Arquivo %s encontrado no índice %u.\n", filename, i);
+
+            uint32_t cluster = root[i].low_starting_cluster;
+            uint32_t cluster_address = (bpb->reserved_sect + (cluster - 2) * bpb->sector_p_clust) * bpb->bytes_p_sect;
+
+            // Posicionar o ponteiro no cluster do arquivo
+            if (fseek(fp, cluster_address, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no cluster do arquivo");
                 return;
             }
-            root[i].file_size = data_size;
 
-            uint32_t entry_address = root_address + sizeof(struct fat32_dir) * i;
-            if (fseek(fp, entry_address, SEEK_SET) != 0) {
-                perror("Erro ao posicionar o ponteiro no arquivo");
+            // Escrever os dados no arquivo
+            if (fwrite(data, strlen(data), 1, fp) != 1) {
+                perror("Erro ao escrever os dados no arquivo");
+                return;
+            }
+
+            // Atualizar o tamanho do arquivo no diretório
+            root[i].file_size = strlen(data);
+
+            // Escrever a entrada do diretório de volta ao disco
+            if (fseek(fp, root_address + sizeof(struct fat32_dir) * i, SEEK_SET) != 0) {
+                perror("Erro ao posicionar o ponteiro no diretório para atualizar o tamanho do arquivo");
                 return;
             }
             if (fwrite(&root[i], sizeof(struct fat32_dir), 1, fp) != 1) {
-                perror("Erro ao atualizar entrada do diretório");
+                perror("Erro ao atualizar o diretório com o tamanho do arquivo");
                 return;
             }
 
-            printf("Dados escritos no arquivo %s com sucesso.\n", filename);
+            printf("Dados escritos com sucesso no arquivo %s.\n", filename);
             return;
         }
     }
