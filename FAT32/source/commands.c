@@ -257,7 +257,7 @@ void rm(FILE* fp, char* filename, struct fat32_bpb* bpb) {
 
     int found = 0;
     for (unsigned int i = 0; i < root_size / sizeof(struct fat32_dir); i++) {
-        if (strncasecmp((const char*)root[i].name, fat32_filename, 11) == 0) {
+        if (strncmp((const char*)root[i].name, fat32_filename, 11) == 0) {
             found = 1;
             uint32_t cluster = root[i].low_starting_cluster;
 
