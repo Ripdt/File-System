@@ -36,7 +36,7 @@ struct fat32_dir *ls(FILE*, struct fat32_bpb*);
 void mv(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb);
 
 /* deletar o arquivo do diretório FAT32 */
-void rm(FILE* fp, char* filename, struct fat32_bpb* bpb);
+void rm(FILE*, char*, struct fat32_bpb*, int debug)
 
 /* copiar o arquivo para o diretório FAT32 */
 void cp(FILE* fp, char* source, char* dest, struct fat32_bpb* bpb);
