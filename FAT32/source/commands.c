@@ -252,18 +252,16 @@ void cp(FILE *fp, char* source, char* dest, struct fat32_bpb *bpb)
     return;
 }
 
-void cat(FILE* fp, char* filename, struct fat32_bpb* bpb) 
-{ 
-    char buffer[512]; 
-    size_t n; 
-    
-    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) 
-    { 
-        fwrite(buffer, 1, n, stdout); 
-    } 
-    
-    if (ferror(fp)) 
-    { 
-        perror("cat: erro ao ler arquivo"); 
+void cat(FILE* fp, char* filename __attribute__((unused)), struct fat32_bpb* bpb __attribute__((unused)))
+{
+    char buffer[512];
+    size_t n;
+
+    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+        fwrite(buffer, 1, n, stdout);
+    }
+
+    if (ferror(fp)) {
+        perror("cat: erro ao ler arquivo");
     }
 }
